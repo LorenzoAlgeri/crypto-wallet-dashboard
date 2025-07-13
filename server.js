@@ -221,13 +221,15 @@ app.get('/api/prices', async (req, res) => {
     const { ids, vs_currencies = 'usd' } = req.query;
     const now = Date.now();
     
+    console.log(`Price request for: ${ids}`);
+    
     // Check if we have valid cached data
     if (priceCache.data && (now - priceCache.timestamp) < priceCache.ttl) {
       console.log('Returning cached prices');
       return res.json(priceCache.data);
     }
     
-    console.log('Fetching fresh prices from CoinGecko');
+    console.log('Fetching fresh prices from CoinGecko for:', ids);
     const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
       params: {
         ids,
@@ -236,6 +238,8 @@ app.get('/api/prices', async (req, res) => {
       }
     });
     
+    console.log('CoinGecko response success');
+    
     // Cache the response
     priceCache.data = response.data;
     priceCache.timestamp = now;
@@ -243,6 +247,8 @@ app.get('/api/prices', async (req, res) => {
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching prices:', error.message);
+    console.error('Error details:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     
     // If we have cached data, return it even if expired
     if (priceCache.data) {

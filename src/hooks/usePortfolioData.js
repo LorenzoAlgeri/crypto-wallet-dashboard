@@ -19,50 +19,103 @@ const usePortfolioData = (wallets) => {
   const [lastPriceFetch, setLastPriceFetch] = useState(0);
   const [priceLoading, setPriceLoading] = useState(false);
 
+  // Mappa simboli token ai loro ID CoinGecko
+  const getTokenPriceIds = (tokens) => {
+    const tokenMap = {
+      'ETH': 'ethereum',
+      'BTC': 'bitcoin', 
+      'LINK': 'chainlink',
+      'UNI': 'uniswap',
+      'ORN': 'orion-protocol',
+      'IMX': 'immutable-x',
+      'AEVO': 'aevo',
+      'USDC': 'usd-coin',
+      'USDT': 'tether',
+      'DAI': 'dai',
+      'WETH': 'ethereum',
+      'MATIC': 'matic-network',
+      'BNB': 'binancecoin',
+      'AVAX': 'avalanche-2'
+    };
+
+    const uniqueTokens = new Set(['ethereum']); // Sempre includi ETH
+    
+    tokens.forEach(token => {
+      const symbol = token.symbol?.toUpperCase();
+      if (symbol && tokenMap[symbol]) {
+        uniqueTokens.add(tokenMap[symbol]);
+      }
+    });
+
+    return Array.from(uniqueTokens).join(',');
+  };
+
   // Fetch prices from CoinGecko with caching to avoid 429 errors
-  const fetchPrices = async (showLoading = false) => {
+  const fetchPrices = async (tokens = [], showLoading = false) => {
     const now = Date.now();
     const CACHE_DURATION = 30000; // 30 seconds cache
     
     // Skip if we fetched prices recently
-    if (now - lastPriceFetch < CACHE_DURATION) {
+    if (now - lastPriceFetch < CACHE_DURATION && Object.keys(prices).length > 0) {
       console.log('Using cached prices to avoid rate limiting');
-      return;
+      return prices; // Return cached prices
     }
     
     if (showLoading) setPriceLoading(true);
     
     try {
+      const tokenIds = getTokenPriceIds(tokens);
+      console.log('Fetching prices for tokens:', tokenIds);
+      
       const response = await axios.get('/api/prices', {
         params: {
-          ids: 'ethereum,bitcoin,chainlink,uniswap',
+          ids: tokenIds,
           vs_currencies: 'usd'
         }
       });
-      setPrices(response.data);
+      
+      const newPrices = response.data;
+      setPrices(newPrices);
       setLastPriceFetch(now);
+      console.log('Price fetch successful:', Object.keys(newPrices).length, 'tokens');
+      return newPrices;
     } catch (error) {
       console.warn('Price fetch failed:', error.response?.status || error.message);
       // Fallback to direct CoinGecko call if proxy fails
       try {
+        const tokenIds = getTokenPriceIds(tokens);
         const directResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
           params: {
-            ids: 'ethereum,bitcoin,chainlink,uniswap',
+            ids: tokenIds,
             vs_currencies: 'usd'
           }
         });
-        setPrices(directResponse.data);
+        const newPrices = directResponse.data;
+        setPrices(newPrices);
         setLastPriceFetch(now);
+        console.log('Fallback price fetch successful:', Object.keys(newPrices).length, 'tokens');
+        return newPrices;
       } catch (fallbackError) {
         console.warn('Both price APIs failed, using fallback prices');
         // Use hardcoded fallback prices to keep the app working
-        setPrices({
+        const fallbackPrices = {
           ethereum: { usd: 2941.03 },
           bitcoin: { usd: 65000 },
           chainlink: { usd: 14.5 },
-          uniswap: { usd: 8.2 }
-        });
+          uniswap: { usd: 8.2 },
+          'orion-protocol': { usd: 1.2 },
+          'immutable-x': { usd: 1.8 },
+          'aevo': { usd: 0.4 },
+          'usd-coin': { usd: 1.0 },
+          'tether': { usd: 1.0 },
+          'dai': { usd: 1.0 },
+          'matic-network': { usd: 0.85 },
+          'binancecoin': { usd: 590 },
+          'avalanche-2': { usd: 35 }
+        };
+        setPrices(fallbackPrices);
         setLastPriceFetch(now);
+        return fallbackPrices;
       }
     } finally {
       if (showLoading) setPriceLoading(false);
@@ -161,6 +214,41 @@ const usePortfolioData = (wallets) => {
     };
   };
 
+  // Calculate asset values with current prices
+  const calculateAssetValues = (rawAssets, currentPrices) => {
+    const tokenMap = {
+      'ETH': 'ethereum',
+      'BTC': 'bitcoin', 
+      'LINK': 'chainlink',
+      'UNI': 'uniswap',
+      'ORN': 'orion-protocol',
+      'IMX': 'immutable-x',
+      'AEVO': 'aevo',
+      'USDC': 'usd-coin',
+      'USDT': 'tether',
+      'DAI': 'dai',
+      'WETH': 'ethereum',
+      'MATIC': 'matic-network',
+      'BNB': 'binancecoin',
+      'AVAX': 'avalanche-2'
+    };
+
+    return rawAssets.map(asset => {
+      const tokenId = tokenMap[asset.symbol?.toUpperCase()];
+      const currentPrice = tokenId && currentPrices[tokenId] ? currentPrices[tokenId].usd : 0;
+      const currentValue = asset.balance * currentPrice;
+
+      return {
+        ...asset,
+        currentPrice,
+        price: currentPrice,
+        value: currentValue,
+        // Recalculate unrealized P/L if we have cost basis
+        unrealizedPL: asset.avgCost > 0 ? currentValue - (asset.balance * asset.avgCost) : asset.unrealizedPL
+      };
+    });
+  };
+
   // Process all wallet data
   const processPortfolioData = async () => {
     if (!wallets || wallets.length === 0) {
@@ -171,22 +259,27 @@ const usePortfolioData = (wallets) => {
     setPortfolioData(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      await fetchPrices();
-
       const walletsData = await Promise.all(
         wallets.map(fetchWalletData)
       );
 
-      let totalValue = 0;
-      let totalCost = 0;
-      let totalUnrealizedPL = 0;
-      let totalRealizedPL = 0;
-      const assets = [];
+      // Raccogli tutti i token per fetchare i prezzi
+      const allTokens = [];
+      walletsData.forEach(walletData => {
+        if (walletData.tokens) {
+          allTokens.push(...walletData.tokens);
+        }
+      });
+
+      // Fetcha i prezzi con i token del wallet - WAIT for completion
+      const currentPrices = await fetchPrices(allTokens, true);
+
+      let rawAssets = [];
 
       walletsData.forEach(walletData => {
         // Process ETH
         if (walletData.ethBalance > 0) {
-          const ethPrice = prices.ethereum?.usd || 2941.03; // Use real price or fallback
+          const ethPrice = currentPrices.ethereum?.usd || 2941.03;
           const ethValue = walletData.ethBalance * ethPrice;
           
           const costData = calculateCostBasis(
@@ -195,14 +288,11 @@ const usePortfolioData = (wallets) => {
             ethPrice
           );
 
-          totalValue += ethValue;
-          totalCost += costData.totalCost;
-          totalUnrealizedPL += costData.unrealizedPL;
-
-          assets.push({
+          rawAssets.push({
             symbol: 'ETH',
             name: 'Ethereum',
             balance: walletData.ethBalance,
+            currentPrice: ethPrice,
             price: ethPrice,
             value: ethValue,
             avgCost: costData.avgCostBasis,
@@ -213,17 +303,37 @@ const usePortfolioData = (wallets) => {
           });
         }
 
-        // Process tokens (simplified)
+        // Process tokens with real prices
         walletData.tokens.forEach(token => {
           const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimals));
           if (balance > 0) {
-            const tokenPrice = 0; // Would need token price lookup
+            // Map token symbol to CoinGecko ID
+            const tokenMap = {
+              'ETH': 'ethereum',
+              'BTC': 'bitcoin', 
+              'LINK': 'chainlink',
+              'UNI': 'uniswap',
+              'ORN': 'orion-protocol',
+              'IMX': 'immutable-x',
+              'AEVO': 'aevo',
+              'USDC': 'usd-coin',
+              'USDT': 'tether',
+              'DAI': 'dai',
+              'WETH': 'ethereum',
+              'MATIC': 'matic-network',
+              'BNB': 'binancecoin',
+              'AVAX': 'avalanche-2'
+            };
+            
+            const tokenId = tokenMap[token.symbol?.toUpperCase()];
+            const tokenPrice = tokenId && currentPrices[tokenId] ? currentPrices[tokenId].usd : 0;
             const tokenValue = balance * tokenPrice;
 
-            assets.push({
+            rawAssets.push({
               symbol: token.symbol,
               name: token.name,
               balance: balance,
+              currentPrice: tokenPrice,
               price: tokenPrice,
               value: tokenValue,
               avgCost: 0,
@@ -236,12 +346,47 @@ const usePortfolioData = (wallets) => {
         });
       });
 
+      // Aggrega asset dello stesso tipo da tutti i wallet
+      const aggregatedAssets = {};
+      rawAssets.forEach(asset => {
+        const key = asset.symbol;
+        if (aggregatedAssets[key]) {
+          // Aggrega asset esistente
+          aggregatedAssets[key].balance += asset.balance;
+          aggregatedAssets[key].value += asset.value;
+          aggregatedAssets[key].avgCost = (aggregatedAssets[key].avgCost + asset.avgCost) / 2; // Media semplice
+          aggregatedAssets[key].unrealizedPL += asset.unrealizedPL;
+          // Aggiungi wallet address se diverso
+          if (aggregatedAssets[key].address !== asset.address) {
+            aggregatedAssets[key].address = `${aggregatedAssets[key].address}, ${asset.address}`;
+          }
+        } else {
+          // Nuovo asset
+          aggregatedAssets[key] = { ...asset };
+        }
+      });
+
+      // Converti oggetto in array e ordina per valore
+      const finalAssets = Object.values(aggregatedAssets).sort((a, b) => b.value - a.value);
+
+      // Calcola totali
+      let totalValue = 0;
+      let totalCost = 0;
+      let totalUnrealizedPL = 0;
+      let totalRealizedPL = 0;
+
+      finalAssets.forEach(asset => {
+        totalValue += asset.value;
+        totalCost += asset.balance * asset.avgCost;
+        totalUnrealizedPL += asset.unrealizedPL;
+      });
+
       setPortfolioData({
         totalValue,
         totalCost,
         unrealizedPL: totalUnrealizedPL,
         realizedPL: totalRealizedPL,
-        assets: assets.sort((a, b) => b.value - a.value),
+        assets: finalAssets,
         loading: false,
         error: null,
         lastUpdated: new Date()
@@ -266,22 +411,56 @@ const usePortfolioData = (wallets) => {
     return () => clearTimeout(timeoutId);
   }, [wallets]);
 
-  // Auto-refresh prices every 60 seconds
+  // Update asset values when prices change (real-time price updates)
+  useEffect(() => {
+    if (portfolioData.assets && portfolioData.assets.length > 0 && Object.keys(prices).length > 0) {
+      console.log('Updating asset values with new prices...');
+      
+      const updatedAssets = calculateAssetValues(portfolioData.assets, prices);
+      
+      // Recalculate totals with new prices
+      let totalValue = 0;
+      let totalCost = 0;
+      let totalUnrealizedPL = 0;
+
+      updatedAssets.forEach(asset => {
+        totalValue += asset.value;
+        totalCost += asset.balance * asset.avgCost;
+        totalUnrealizedPL += asset.unrealizedPL;
+      });
+
+      // Only update if values actually changed to avoid infinite loops
+      if (Math.abs(totalValue - portfolioData.totalValue) > 0.01) {
+        setPortfolioData(prev => ({
+          ...prev,
+          totalValue,
+          totalCost,
+          unrealizedPL: totalUnrealizedPL,
+          assets: updatedAssets,
+          lastUpdated: new Date()
+        }));
+      }
+    }
+  }, [prices]); // React to price changes
+
+  // Auto-refresh prices every 60 seconds - only fetch, values update automatically via useEffect
   useInterval(() => {
-    if (!portfolioData.loading) {
+    if (!portfolioData.loading && portfolioData.assets && portfolioData.assets.length > 0) {
       console.log('Auto-refreshing prices...');
-      fetchPrices(true); // Show loading indicator
+      // Extract tokens from current assets for targeted price fetch
+      const currentTokens = portfolioData.assets.map(asset => ({ symbol: asset.symbol }));
+      fetchPrices(currentTokens, true); // Show loading indicator
     }
   }, 60000); // 1 minute
 
-  // Auto-refresh portfolio every 2 minutes 
+  // Auto-refresh portfolio every 5 minutes (reduced frequency to avoid rate limits)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!portfolioData.loading) {
+      if (!portfolioData.loading && wallets && wallets.length > 0) {
         console.log('Auto-refreshing portfolio data...');
         processPortfolioData();
       }
-    }, 120000); // 2 minutes
+    }, 300000); // 5 minutes
 
     return () => clearInterval(interval);
   }, [wallets, portfolioData.loading]);
@@ -290,7 +469,11 @@ const usePortfolioData = (wallets) => {
     ...portfolioData,
     priceLoading,
     refresh: processPortfolioData,
-    refreshPrices: () => fetchPrices(true)
+    refreshPrices: () => {
+      const currentTokens = portfolioData.assets ? 
+        portfolioData.assets.map(asset => ({ symbol: asset.symbol })) : [];
+      return fetchPrices(currentTokens, true);
+    }
   };
 };
 

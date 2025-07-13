@@ -1,14 +1,11 @@
 import React from 'react';
-import usePortfolioData from '../hooks/usePortfolioData';
 import OverviewCards from './OverviewCards';
 import HistoryChart from './HistoryChart';
 import AllocationChart from './AllocationChart';
 import AssetTable from './AssetTable';
 
-const Dashboard = ({ wallets }) => {
-  const portfolioData = usePortfolioData(wallets);
-
-  if (portfolioData.loading) {
+const Dashboard = ({ wallets, portfolioData, loading, error }) => {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="flex items-center space-x-3">
@@ -19,7 +16,7 @@ const Dashboard = ({ wallets }) => {
     );
   }
 
-  if (portfolioData.error) {
+  if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
         <div className="flex items-start">
@@ -28,14 +25,19 @@ const Dashboard = ({ wallets }) => {
           </div>
           <div className="ml-3">
             <h3 className="text-red-800 font-medium">Error Loading Data</h3>
-            <p className="text-red-700 text-sm mt-1">{portfolioData.error}</p>
-            <button
-              onClick={portfolioData.refresh}
-              className="mt-3 text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              Try Again
-            </button>
+            <p className="text-red-700 text-sm mt-1">{error}</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!portfolioData) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center space-x-3">
+          <div className="loading-spinner"></div>
+          <span className="text-gray-600">Preparing dashboard...</span>
         </div>
       </div>
     );
@@ -56,7 +58,7 @@ const Dashboard = ({ wallets }) => {
       <AssetTable data={portfolioData} />
 
       {/* Last Updated */}
-      {portfolioData.lastUpdated && (
+      {portfolioData?.lastUpdated && (
         <div className="text-center text-sm text-gray-500">
           Last updated: {portfolioData.lastUpdated.toLocaleString()}
         </div>
