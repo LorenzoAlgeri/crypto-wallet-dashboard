@@ -13,51 +13,157 @@ dotenv.config({ path: join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const LOCAL_SERVER = process.env.LOCAL_SERVER === 'true';
 
-// Debug: Log if API key is loaded
+// Moralis API configuration
+const MORALIS_BASE_URL = 'https://deep-index.moralis.io/api/v2';
+const MORALIS_V22_BASE_URL = 'https://deep-index.moralis.io/api/v2.2';
+
+// Debug: Log configuration
+console.log('🔧 Server Configuration:');
 console.log('Moralis API Key loaded:', process.env.MORALIS_API_KEY ? 'Yes' : 'No');
 console.log('Etherscan API Key loaded:', process.env.ETHERSCAN_API_KEY ? 'Yes' : 'No');
+console.log('Local Server Mode:', LOCAL_SERVER ? 'Enabled' : 'Disabled');
+console.log('Port:', PORT);
 
 app.use(cors());
 app.use(express.json());
 
-// Moralis API proxy
+// Exponential backoff helper for Moralis API calls
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const callMoralisWithRetry = async (url, options, maxRetries = 3) => {
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await axios.get(url, options);
+      return response;
+    } catch (error) {
+      lastError = error;
+      
+      const isRetryableError = 
+        error.response?.status === 429 || 
+        error.response?.status >= 500 ||
+        error.code === 'ECONNABORTED' ||
+        error.code === 'ENOTFOUND';
+      
+      if (!isRetryableError || attempt === maxRetries - 1) {
+        break;
+      }
+      
+      const delay = Math.min(300 * Math.pow(2, attempt), 2400);
+      console.warn(`Server: Moralis API retry ${attempt + 1}/${maxRetries} after ${delay}ms`);
+      await sleep(delay);
+    }
+  }
+  
+  throw lastError;
+};
+
+// Moralis API proxy with v2.2 support
 app.get('/api/balance/:address', async (req, res) => {
   try {
     const { address } = req.params;
     const { chain = 'eth' } = req.query;
     
-    const response = await axios.get(`https://deep-index.moralis.io/api/v2/${address}/balance`, {
+    const baseUrl = LOCAL_SERVER ? MORALIS_V22_BASE_URL : MORALIS_BASE_URL;
+    const url = `${baseUrl}/${address}/balance`;
+    
+    const response = await callMoralisWithRetry(url, {
       params: { chain },
       headers: {
         'X-API-Key': process.env.MORALIS_API_KEY
-      }
+      },
+      timeout: 10000
     });
     
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching balance:', error.message);
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch balance',
+      details: error.message
+    });
   }
 });
 
-// Moralis token balances proxy
+// Moralis token balances proxy with v2.2 support
 app.get('/api/tokens/:address', async (req, res) => {
   try {
     const { address } = req.params;
     const { chain = 'eth' } = req.query;
     
-    const response = await axios.get(`https://deep-index.moralis.io/api/v2/${address}/erc20`, {
+    const baseUrl = LOCAL_SERVER ? MORALIS_V22_BASE_URL : MORALIS_BASE_URL;
+    const url = `${baseUrl}/${address}/erc20`;
+    
+    const response = await callMoralisWithRetry(url, {
       params: { chain },
       headers: {
         'X-API-Key': process.env.MORALIS_API_KEY
-      }
+      },
+      timeout: 10000
     });
     
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching tokens:', error.message);
-    res.status(500).json({ error: 'Failed to fetch tokens' });
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch tokens',
+      details: error.message
+    });
+  }
+});
+
+// Moralis v2.2 wallet history endpoint
+app.get('/api/wallet/:address/history', async (req, res) => {
+  try {
+    const { address } = req.params;
+    const { chain = 'eth' } = req.query;
+    
+    const url = `${MORALIS_V22_BASE_URL}/wallets/${address}/history`;
+    
+    const response = await callMoralisWithRetry(url, {
+      params: { chain },
+      headers: {
+        'X-API-Key': process.env.MORALIS_API_KEY
+      },
+      timeout: 10000
+    });
+    
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching wallet history:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch wallet history',
+      details: error.message
+    });
+  }
+});
+
+// Moralis v2.2 wallet tokens with prices
+app.get('/api/wallet/:address/tokens', async (req, res) => {
+  try {
+    const { address } = req.params;
+    const { chain = 'eth' } = req.query;
+    
+    const url = `${MORALIS_V22_BASE_URL}/wallets/${address}/tokens`;
+    
+    const response = await callMoralisWithRetry(url, {
+      params: { chain },
+      headers: {
+        'X-API-Key': process.env.MORALIS_API_KEY
+      },
+      timeout: 10000
+    });
+    
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching wallet tokens with prices:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch wallet tokens with prices',
+      details: error.message
+    });
   }
 });
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { moralisApi } from '../utils/moralisApi.js';
 
 const usePortfolioData = (wallets) => {
   const [portfolioData, setPortfolioData] = useState({
@@ -65,18 +66,40 @@ const usePortfolioData = (wallets) => {
   // Fetch wallet balance and tokens
   const fetchWalletData = async (address) => {
     try {
-      // Try to get real data from backend APIs
-      const balanceResponse = await axios.get(`/api/balance/${address}`);
-      const ethBalance = parseFloat(balanceResponse.data.balance) / Math.pow(10, 18);
+      console.log(`Fetching data for wallet: ${address}`);
+      
+      // Try Moralis API first
+      let ethBalance = 0;
+      let tokens = [];
+      let transactions = { normal: [], internal: [] };
 
-      const tokensResponse = await axios.get(`/api/tokens/${address}`);
-      const tokens = tokensResponse.data || [];
+      try {
+        console.log('Attempting Moralis API call...');
+        const balanceData = await moralisApi.getNativeBalance(address);
+        ethBalance = parseFloat(balanceData.balance) / Math.pow(10, 18);
+        
+        const tokenData = await moralisApi.getWalletTokenBalances(address);
+        tokens = tokenData || [];
+        
+        console.log(`Moralis API success: ETH=${ethBalance}, Tokens=${tokens.length}`);
+      } catch (moralisError) {
+        console.warn(`Moralis API failed, trying server proxy:`, moralisError.message);
+        
+        // Fallback to existing server API calls
+        const balanceResponse = await axios.get(`/api/balance/${address}`);
+        ethBalance = parseFloat(balanceResponse.data.balance) / Math.pow(10, 18);
 
-      const txResponse = await axios.get(`/api/transactions/${address}`);
-      const transactions = {
-        normal: txResponse.data.normal || [],
-        internal: txResponse.data.internal || []
-      };
+        const tokensResponse = await axios.get(`/api/tokens/${address}`);
+        tokens = tokensResponse.data || [];
+
+        const txResponse = await axios.get(`/api/transactions/${address}`);
+        transactions = {
+          normal: txResponse.data.normal || [],
+          internal: txResponse.data.internal || []
+        };
+        
+        console.log(`Server proxy success: ETH=${ethBalance}, Tokens=${tokens.length}`);
+      }
 
       // If wallet has real assets, return them
       if (ethBalance > 0 || tokens.length > 0) {
