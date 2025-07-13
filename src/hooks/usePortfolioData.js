@@ -19,7 +19,7 @@ const usePortfolioData = (wallets) => {
   const [lastPriceFetch, setLastPriceFetch] = useState(0);
   const [priceLoading, setPriceLoading] = useState(false);
 
-  // Mappa simboli token ai loro ID CoinGecko
+  // Mappa simboli token ai loro ID CoinGecko - ESTESA
   const getTokenPriceIds = (tokens) => {
     const tokenMap = {
       'ETH': 'ethereum',
@@ -35,19 +35,35 @@ const usePortfolioData = (wallets) => {
       'WETH': 'ethereum',
       'MATIC': 'matic-network',
       'BNB': 'binancecoin',
-      'AVAX': 'avalanche-2'
+      'AVAX': 'avalanche-2',
+      'METIS': 'metis-token',
+      'FLUX': 'zelcash',
+      'HIGH': 'highstreet',
+      'API3': 'api3',
+      'RENT': 'rentberry',
+      'GAS': 'gas',
+      'ORAI': 'oraichain-token',
+      'PYR': 'vulcan-forged',
+      'SQUARMS': 'squarms'
     };
 
     const uniqueTokens = new Set(['ethereum']); // Sempre includi ETH
+    
+    console.log('Processing tokens for price fetch:', tokens.length);
     
     tokens.forEach(token => {
       const symbol = token.symbol?.toUpperCase();
       if (symbol && tokenMap[symbol]) {
         uniqueTokens.add(tokenMap[symbol]);
+        console.log(`Mapped ${symbol} -> ${tokenMap[symbol]}`);
+      } else if (symbol) {
+        console.log(`No mapping found for token: ${symbol}`);
       }
     });
 
-    return Array.from(uniqueTokens).join(',');
+    const result = Array.from(uniqueTokens).join(',');
+    console.log(`Final token IDs for price fetch (${uniqueTokens.size} tokens):`, result);
+    return result;
   };
 
   // Fetch prices from CoinGecko with caching to avoid 429 errors
@@ -230,7 +246,16 @@ const usePortfolioData = (wallets) => {
       'WETH': 'ethereum',
       'MATIC': 'matic-network',
       'BNB': 'binancecoin',
-      'AVAX': 'avalanche-2'
+      'AVAX': 'avalanche-2',
+      'METIS': 'metis-token',
+      'FLUX': 'zelcash',
+      'HIGH': 'highstreet',
+      'API3': 'api3',
+      'RENT': 'rentberry',
+      'GAS': 'gas',
+      'ORAI': 'oraichain-token',
+      'PYR': 'vulcan-forged',
+      'SQUARMS': 'squarms'
     };
 
     return rawAssets.map(asset => {
@@ -307,7 +332,7 @@ const usePortfolioData = (wallets) => {
         walletData.tokens.forEach(token => {
           const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimals));
           if (balance > 0) {
-            // Map token symbol to CoinGecko ID
+            // Map token symbol to CoinGecko ID - ESTESA
             const tokenMap = {
               'ETH': 'ethereum',
               'BTC': 'bitcoin', 
@@ -322,16 +347,30 @@ const usePortfolioData = (wallets) => {
               'WETH': 'ethereum',
               'MATIC': 'matic-network',
               'BNB': 'binancecoin',
-              'AVAX': 'avalanche-2'
+              'AVAX': 'avalanche-2',
+              'METIS': 'metis-token',
+              'FLUX': 'zelcash',
+              'HIGH': 'highstreet',
+              'API3': 'api3',
+              'RENT': 'rentberry',
+              'GAS': 'gas',
+              'ORAI': 'oraichain-token',
+              'PYR': 'vulcan-forged',
+              'SQUARMS': 'squarms'
             };
             
             const tokenId = tokenMap[token.symbol?.toUpperCase()];
             const tokenPrice = tokenId && currentPrices[tokenId] ? currentPrices[tokenId].usd : 0;
             const tokenValue = balance * tokenPrice;
 
+            // Normalizza il nome del token per evitare nomi "strani"
+            const normalizedName = token.name && !token.name.includes('http') && !token.name.includes('#') && !token.name.includes('!') && !token.name.includes('Visit') && !token.name.includes('Claim') && !token.name.includes('Get $') 
+              ? token.name 
+              : token.symbol?.toUpperCase() || 'Unknown';
+
             rawAssets.push({
-              symbol: token.symbol,
-              name: token.name,
+              symbol: token.symbol?.toUpperCase() || 'UNKNOWN',
+              name: normalizedName,
               balance: balance,
               currentPrice: tokenPrice,
               price: tokenPrice,
@@ -403,12 +442,23 @@ const usePortfolioData = (wallets) => {
   };
 
   useEffect(() => {
-    // Debounce wallet changes to avoid multiple rapid API calls
-    const timeoutId = setTimeout(() => {
+    // Immediate wallet change detection - no debounce for new wallets
+    if (wallets && wallets.length > 0) {
+      console.log('Wallets changed, immediately fetching portfolio data for:', wallets.length, 'wallets');
       processPortfolioData();
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
+    } else {
+      // Reset state when no wallets
+      setPortfolioData({
+        totalValue: 0,
+        totalCost: 0,
+        unrealizedPL: 0,
+        realizedPL: 0,
+        assets: [],
+        loading: false,
+        error: null,
+        lastUpdated: null
+      });
+    }
   }, [wallets]);
 
   // Update asset values when prices change (real-time price updates)

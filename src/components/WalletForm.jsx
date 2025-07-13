@@ -93,7 +93,7 @@ const WalletForm = ({ onAddWallet, wallets, onRemoveWallet }) => {
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="0x... Enter Ethereum wallet address"
+              placeholder=""
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
             />
             {error && (

@@ -10,6 +10,18 @@ import { Doughnut } from 'react-chartjs-2';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const AllocationChart = ({ data }) => {
+  // Safety check for data prop
+  if (!data) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="text-center py-8 text-gray-500">
+          <div className="text-4xl mb-2">⏳</div>
+          <div>Loading portfolio data...</div>
+        </div>
+      </div>
+    );
+  }
+
   // Prepare data for the doughnut chart
   const prepareChartData = () => {
     if (!data.assets || data.assets.length === 0) {
@@ -19,7 +31,10 @@ const AllocationChart = ({ data }) => {
           data: [1],
           backgroundColor: ['#e5e7eb'],
           borderWidth: 0
-        }]
+        }],
+        assets: [],
+        values: [1],
+        percentages: [100]
       };
     }
 
@@ -112,11 +127,13 @@ const AllocationChart = ({ data }) => {
         cornerRadius: 8,
         callbacks: {
           label: function(context) {
+            if (!chartData.assets || !chartData.percentages) return [];
             const asset = chartData.assets[context.dataIndex];
             const percentage = chartData.percentages[context.dataIndex];
+            if (!asset) return [];
             return [
-              `${asset.symbol}: $${asset.value.toLocaleString()}`,
-              `${percentage.toFixed(1)}% of portfolio`
+              `${asset.symbol}: $${asset.value ? asset.value.toLocaleString() : '0'}`,
+              `${percentage ? percentage.toFixed(1) : '0.0'}% of portfolio`
             ];
           }
         }
@@ -155,7 +172,7 @@ const AllocationChart = ({ data }) => {
           {/* Center text */}
           <div className="absolute inset-0 flex items-center justify-center flex-col">
             <div className="text-2xl font-bold text-gray-900">
-              {chartData.assets.length > 1 ? chartData.assets.length - (chartData.assets.find(a => a.symbol === 'Others') ? 1 : 0) : 0}
+              {chartData.assets && chartData.assets.length > 1 ? chartData.assets.length - (chartData.assets.find(a => a.symbol === 'Others') ? 1 : 0) : 0}
             </div>
             <div className="text-sm text-gray-500">Assets</div>
           </div>
@@ -164,7 +181,7 @@ const AllocationChart = ({ data }) => {
         {/* Legend */}
         <div className="flex-1 lg:ml-8 mt-6 lg:mt-0">
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {chartData.assets.map((asset, index) => (
+            {chartData.assets && chartData.assets.map((asset, index) => (
               <div key={asset.symbol} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div 
@@ -185,7 +202,7 @@ const AllocationChart = ({ data }) => {
                     {formatCurrency(asset.value)}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {chartData.percentages[index].toFixed(1)}%
+                    {chartData.percentages && chartData.percentages[index] ? chartData.percentages[index].toFixed(1) : '0.0'}%
                   </div>
                 </div>
               </div>

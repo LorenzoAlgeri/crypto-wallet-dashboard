@@ -10,21 +10,36 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   
   // Carica i dati del portfolio una sola volta per condividerli tra i componenti
-  const portfolioDataResult = usePortfolioData(wallets)
-  const { loading, error, ...portfolioData } = portfolioDataResult
+  const portfolioResult = usePortfolioData(wallets)
+  const portfolioData = portfolioResult
+  const loading = portfolioResult.loading
+  const error = portfolioResult.error
 
-  // Load demo wallet on startup
+  // Load wallets from localStorage on startup, if any
   useEffect(() => {
-    const demoWallet = '0x6339037ddF59e9a830980cc0a7DF990Ecd463F31'
-    setWallets([{ address: demoWallet, chains: ['eth'] }])
+    const savedWallets = localStorage.getItem('trackedWallets')
+    if (savedWallets) {
+      try {
+        const parsedWallets = JSON.parse(savedWallets)
+        if (Array.isArray(parsedWallets) && parsedWallets.length > 0) {
+          setWallets(parsedWallets)
+        }
+      } catch (error) {
+        console.warn('Failed to parse saved wallets:', error)
+      }
+    }
   }, [])
 
   const handleAddWallet = (walletData) => {
-    setWallets(prev => [...prev, walletData])
+    const newWallets = [...wallets, walletData]
+    setWallets(newWallets)
+    localStorage.setItem('trackedWallets', JSON.stringify(newWallets))
   }
 
   const handleRemoveWallet = (address) => {
-    setWallets(prev => prev.filter(wallet => (wallet.address || wallet) !== address))
+    const newWallets = wallets.filter(wallet => (wallet.address || wallet) !== address)
+    setWallets(newWallets)
+    localStorage.setItem('trackedWallets', JSON.stringify(newWallets))
   }
 
   const tabs = [
