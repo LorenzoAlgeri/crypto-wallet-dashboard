@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Papa from 'papaparse';
 
 const AssetTable = ({ data }) => {
   const [sortBy, setSortBy] = useState('value');
@@ -26,6 +27,35 @@ const AssetTable = ({ data }) => {
     } else {
       setSortBy(column);
       setSortOrder('desc');
+    }
+  };
+
+  const exportToCSV = () => {
+    const assets = data.assets || [];
+    const csvData = assets.map(asset => ({
+      Symbol: asset.symbol,
+      Name: asset.name,
+      Balance: asset.balance,
+      Price: asset.price,
+      Value: asset.value,
+      'Avg Cost': asset.avgCost,
+      'Unrealized P/L': asset.unrealizedPL,
+      Network: asset.network,
+      Address: asset.address
+    }));
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `portfolio-assets-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -95,8 +125,19 @@ const AssetTable = ({ data }) => {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Assets</h3>
-        <div className="text-sm text-gray-500">
-          {data.assets.length} asset{data.assets.length !== 1 ? 's' : ''}
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-500">
+            {data.assets.length} asset{data.assets.length !== 1 ? 's' : ''}
+          </div>
+          <button
+            onClick={exportToCSV}
+            className="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Export CSV</span>
+          </button>
         </div>
       </div>
 

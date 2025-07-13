@@ -9,15 +9,15 @@ function App() {
   // Load demo wallet on startup
   useEffect(() => {
     const demoWallet = '0x6339037ddF59e9a830980cc0a7DF990Ecd463F31'
-    setWallets([demoWallet])
+    setWallets([{ address: demoWallet, chains: ['eth'] }])
   }, [])
 
-  const handleAddWallet = (address) => {
-    setWallets(prev => [...prev, address])
+  const handleAddWallet = (walletData) => {
+    setWallets(prev => [...prev, walletData])
   }
 
   const handleRemoveWallet = (address) => {
-    setWallets(prev => prev.filter(wallet => wallet !== address))
+    setWallets(prev => prev.filter(wallet => (wallet.address || wallet) !== address))
   }
 
   return (

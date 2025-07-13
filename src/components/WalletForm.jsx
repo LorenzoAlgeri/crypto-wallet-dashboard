@@ -3,9 +3,25 @@ import React, { useState } from 'react';
 const WalletForm = ({ onAddWallet, wallets, onRemoveWallet }) => {
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
+  const [selectedChains, setSelectedChains] = useState(['eth']);
 
   const validateEthereumAddress = (addr) => {
     return /^0x[a-fA-F0-9]{40}$/.test(addr);
+  };
+
+  const chains = [
+    { id: 'eth', name: 'Ethereum', icon: '🔷' },
+    { id: 'arbitrum', name: 'Arbitrum', icon: '🔵' },
+    { id: 'polygon', name: 'Polygon', icon: '🟣' },
+    { id: 'bsc', name: 'BSC', icon: '🟡' }
+  ];
+
+  const toggleChain = (chainId) => {
+    setSelectedChains(prev => 
+      prev.includes(chainId) 
+        ? prev.filter(id => id !== chainId)
+        : [...prev, chainId]
+    );
   };
 
   const handleSubmit = (e) => {
@@ -22,12 +38,12 @@ const WalletForm = ({ onAddWallet, wallets, onRemoveWallet }) => {
       return;
     }
 
-    if (wallets.includes(address)) {
+    if (wallets.some(wallet => (wallet.address || wallet) === address)) {
       setError('This wallet is already being tracked');
       return;
     }
 
-    onAddWallet(address);
+    onAddWallet({ address, chains: selectedChains });
     setAddress('');
   };
 
@@ -41,6 +57,32 @@ const WalletForm = ({ onAddWallet, wallets, onRemoveWallet }) => {
         >
           🔄 Refresh
         </button>
+      </div>
+
+      {/* Chain Selector */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Supported Networks:
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {chains.map(chain => (
+            <button
+              key={chain.id}
+              type="button"
+              onClick={() => toggleChain(chain.id)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                selectedChains.includes(chain.id)
+                  ? 'bg-primary-50 border-primary-200 text-primary-700'
+                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {chain.icon} {chain.name}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Wallets will be monitored across all 7 networks automatically using Ethereum V2 API
+        </p>
       </div>
 
       {/* Add Wallet Form */}
@@ -104,17 +146,24 @@ const WalletForm = ({ onAddWallet, wallets, onRemoveWallet }) => {
           </h3>
           <div className="space-y-2">
             {wallets.map((wallet, index) => (
-              <div key={wallet} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={wallet.address || wallet} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                     {index + 1}
                   </div>
-                  <code className="text-sm text-gray-700 bg-white px-2 py-1 rounded border">
-                    {wallet.slice(0, 6)}...{wallet.slice(-4)}
-                  </code>
+                  <div>
+                    <code className="text-sm text-gray-700 bg-white px-2 py-1 rounded border">
+                      {(wallet.address || wallet).slice(0, 6)}...{(wallet.address || wallet).slice(-4)}
+                    </code>
+                    {wallet.chains && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {wallet.chains.map(chainId => chains.find(c => c.id === chainId)?.name).join(', ')}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <button
-                  onClick={() => onRemoveWallet(wallet)}
+                  onClick={() => onRemoveWallet(wallet.address || wallet)}
                   className="text-red-500 hover:text-red-700 p-1 rounded"
                   title="Remove wallet"
                 >

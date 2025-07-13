@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { moralisApi } from '../utils/moralisApi.js';
+import useInterval from './useInterval.js';
 
 const usePortfolioData = (wallets) => {
   const [portfolioData, setPortfolioData] = useState({
@@ -16,9 +17,10 @@ const usePortfolioData = (wallets) => {
 
   const [prices, setPrices] = useState({});
   const [lastPriceFetch, setLastPriceFetch] = useState(0);
+  const [priceLoading, setPriceLoading] = useState(false);
 
   // Fetch prices from CoinGecko with caching to avoid 429 errors
-  const fetchPrices = async () => {
+  const fetchPrices = async (showLoading = false) => {
     const now = Date.now();
     const CACHE_DURATION = 30000; // 30 seconds cache
     
@@ -27,6 +29,8 @@ const usePortfolioData = (wallets) => {
       console.log('Using cached prices to avoid rate limiting');
       return;
     }
+    
+    if (showLoading) setPriceLoading(true);
     
     try {
       const response = await axios.get('/api/prices', {
@@ -60,11 +64,14 @@ const usePortfolioData = (wallets) => {
         });
         setLastPriceFetch(now);
       }
+    } finally {
+      if (showLoading) setPriceLoading(false);
     }
   };
 
   // Fetch wallet balance and tokens
-  const fetchWalletData = async (address) => {
+  const fetchWalletData = async (wallet) => {
+    const address = wallet.address || wallet;
     try {
       console.log(`Fetching data for wallet: ${address}`);
       
@@ -107,7 +114,8 @@ const usePortfolioData = (wallets) => {
           address,
           ethBalance,
           tokens,
-          transactions
+          transactions,
+          chains: wallet.chains || ['eth']
         };
       } else {
         // Fallback to demo data that matches the screenshot for empty wallets
@@ -116,7 +124,8 @@ const usePortfolioData = (wallets) => {
           address,
           ethBalance: 0.0156, // ETH balance from screenshot
           tokens: [], // No tokens shown in screenshot
-          transactions: { normal: [], internal: [] }
+          transactions: { normal: [], internal: [] },
+          chains: wallet.chains || ['eth']
         };
       }
     } catch (error) {
@@ -127,7 +136,8 @@ const usePortfolioData = (wallets) => {
         address,
         ethBalance: 0.0156, // ETH balance from screenshot
         tokens: [], // No tokens shown in screenshot
-        transactions: { normal: [], internal: [] }
+        transactions: { normal: [], internal: [] },
+        chains: wallet.chains || ['eth']
       };
       
       console.log('Using demo data for wallet due to API error:', address);
@@ -198,7 +208,8 @@ const usePortfolioData = (wallets) => {
             avgCost: costData.avgCostBasis,
             unrealizedPL: costData.unrealizedPL,
             address: walletData.address,
-            network: 'Arbitrum' // Network from screenshot
+            network: walletData.chains?.[0] || 'eth',
+            chains: walletData.chains || ['eth']
           });
         }
 
@@ -218,7 +229,8 @@ const usePortfolioData = (wallets) => {
               avgCost: 0,
               unrealizedPL: 0,
               address: walletData.address,
-              network: 'Ethereum'
+              network: walletData.chains?.[0] || 'eth',
+              chains: walletData.chains || ['eth']
             });
           }
         });
@@ -254,7 +266,15 @@ const usePortfolioData = (wallets) => {
     return () => clearTimeout(timeoutId);
   }, [wallets]);
 
-  // Auto-refresh every 2 minutes (increased from 60 seconds to reduce API calls)
+  // Auto-refresh prices every 60 seconds
+  useInterval(() => {
+    if (!portfolioData.loading) {
+      console.log('Auto-refreshing prices...');
+      fetchPrices(true); // Show loading indicator
+    }
+  }, 60000); // 1 minute
+
+  // Auto-refresh portfolio every 2 minutes 
   useEffect(() => {
     const interval = setInterval(() => {
       if (!portfolioData.loading) {
@@ -268,7 +288,9 @@ const usePortfolioData = (wallets) => {
 
   return {
     ...portfolioData,
-    refresh: processPortfolioData
+    priceLoading,
+    refresh: processPortfolioData,
+    refreshPrices: () => fetchPrices(true)
   };
 };
 

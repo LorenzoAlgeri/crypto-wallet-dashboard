@@ -1,0 +1,463 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OverviewCards renders correctly with negative P/L data 1`] = `
+<div
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-blue-50 border-blue-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 border-blue-200"
+        >
+          <span
+            class="text-xl text-blue-600"
+          >
+            💰
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Total Value
+          </p>
+          <p
+            class="text-2xl font-bold text-gray-900"
+          >
+            $6,000.00
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-gray-50 border-gray-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-50 border-gray-200"
+        >
+          <span
+            class="text-xl text-gray-600"
+          >
+            📊
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Total Cost
+          </p>
+          <p
+            class="text-2xl font-bold text-gray-900"
+          >
+            $8,000.00
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-red-50 border-red-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-red-50 border-red-200"
+        >
+          <span
+            class="text-xl text-red-600"
+          >
+            📈
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Unrealized P/L
+          </p>
+          <p
+            class="text-2xl font-bold text-red-600"
+          >
+            -$2,000.00
+          </p>
+          <p
+            class="text-sm font-medium text-red-600"
+          >
+            -25.00%
+          </p>
+        </div>
+      </div>
+      <div
+        class="text-2xl text-red-500"
+      >
+        📉
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-red-50 border-red-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-red-50 border-red-200"
+        >
+          <span
+            class="text-xl text-red-600"
+          >
+            💸
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Realized P/L
+          </p>
+          <p
+            class="text-2xl font-bold text-red-600"
+          >
+            -$500.00
+          </p>
+        </div>
+      </div>
+      <div
+        class="text-2xl text-red-500"
+      >
+        📉
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`OverviewCards renders correctly with positive P/L data 1`] = `
+<div
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-blue-50 border-blue-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 border-blue-200"
+        >
+          <span
+            class="text-xl text-blue-600"
+          >
+            💰
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Total Value
+          </p>
+          <p
+            class="text-2xl font-bold text-gray-900"
+          >
+            $10,000.00
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-gray-50 border-gray-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-50 border-gray-200"
+        >
+          <span
+            class="text-xl text-gray-600"
+          >
+            📊
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Total Cost
+          </p>
+          <p
+            class="text-2xl font-bold text-gray-900"
+          >
+            $8,000.00
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-green-50 border-green-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 border-green-200"
+        >
+          <span
+            class="text-xl text-green-600"
+          >
+            📈
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Unrealized P/L
+          </p>
+          <p
+            class="text-2xl font-bold text-green-600"
+          >
+            $2,000.00
+          </p>
+          <p
+            class="text-sm font-medium text-green-600"
+          >
+            +25.00%
+          </p>
+        </div>
+      </div>
+      <div
+        class="text-2xl text-green-500"
+      >
+        📈
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-green-50 border-green-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 border-green-200"
+        >
+          <span
+            class="text-xl text-green-600"
+          >
+            💸
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Realized P/L
+          </p>
+          <p
+            class="text-2xl font-bold text-green-600"
+          >
+            $500.00
+          </p>
+        </div>
+      </div>
+      <div
+        class="text-2xl text-green-500"
+      >
+        📈
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`OverviewCards renders correctly with zero values 1`] = `
+<div
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-blue-50 border-blue-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 border-blue-200"
+        >
+          <span
+            class="text-xl text-blue-600"
+          >
+            💰
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Total Value
+          </p>
+          <p
+            class="text-2xl font-bold text-gray-900"
+          >
+            $0.00
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-gray-50 border-gray-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-50 border-gray-200"
+        >
+          <span
+            class="text-xl text-gray-600"
+          >
+            📊
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Total Cost
+          </p>
+          <p
+            class="text-2xl font-bold text-gray-900"
+          >
+            $0.00
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-green-50 border-green-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 border-green-200"
+        >
+          <span
+            class="text-xl text-green-600"
+          >
+            📈
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Unrealized P/L
+          </p>
+          <p
+            class="text-2xl font-bold text-green-600"
+          >
+            $0.00
+          </p>
+          <p
+            class="text-sm font-medium text-green-600"
+          >
+            +0.00%
+          </p>
+        </div>
+      </div>
+      <div
+        class="text-2xl text-green-500"
+      >
+        📈
+      </div>
+    </div>
+  </div>
+  <div
+    class="bg-white rounded-lg shadow-sm border p-6 bg-green-50 border-green-200"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <div
+        class="flex items-center space-x-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 border-green-200"
+        >
+          <span
+            class="text-xl text-green-600"
+          >
+            💸
+          </span>
+        </div>
+        <div>
+          <p
+            class="text-sm font-medium text-gray-600"
+          >
+            Realized P/L
+          </p>
+          <p
+            class="text-2xl font-bold text-green-600"
+          >
+            $0.00
+          </p>
+        </div>
+      </div>
+      <div
+        class="text-2xl text-green-500"
+      >
+        📈
+      </div>
+    </div>
+  </div>
+</div>
+`;
